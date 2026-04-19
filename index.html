@@ -3,9 +3,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <script>
+        AFRAME.registerComponent('occluder', {
+          init: function () {
+            this.el.addEventListener('model-loaded', () => {
+              this.el.getObject3D('mesh').traverse((node) => {
+                if (node.isMesh) {
+                  node.material.colorWrite = false;
+                }
+              });
+            });
+            // For basic primitives like a-box or a-plane
+            const mesh = this.el.getObject3D('mesh');
+            if (mesh) {
+              mesh.traverse((node) => {
+                if (node.isMesh) {
+                  node.material.colorWrite = false;
+                }
+              });
+            }
+          }
+        });
+
       const showInfo = () => {
         let y = 0;
         const profileButton = document.querySelector("#profile-button");
@@ -57,7 +79,7 @@
         const portfolioRightButton = document.querySelector("#portfolio-right-button");
         const paintandquestPreviewButton = document.querySelector("#paintandquest-preview-button");
 
-        let y = 0;
+        let x = 0;
         let currentItem = 0;
 
         portfolio.setAttribute("visible", true);
@@ -68,8 +90,8 @@
           }
         }
         const id = setInterval(() => {
-          y += 0.008;
-          if (y >= 0.6) {
+          x += 0.008;
+          if (x >= 1.3) {
             clearInterval(id);
             portfolioLeftButton.setAttribute("visible", true);
             portfolioRightButton.setAttribute("visible", true);
@@ -99,7 +121,7 @@
               done();
             }, 500);
           }
-          portfolio.setAttribute("position", "0 " + y + " -0.01");
+          portfolio.setAttribute("position", x + " 0 -0.01");
         }, 10);
       }
 
@@ -116,26 +138,45 @@
         }, 10);
       }
 
-      AFRAME.registerComponent('mytarget', {
-        init: function () {
-          this.el.addEventListener('targetFound', event => {
-            console.log("target found");
-            showAvatar(() => {
-              setTimeout(() => {
-                showPortfolio(() => {
-                  setTimeout(() => {
-                    showInfo();
-                  }, 300);
-                });
-              }, 300);
+  AFRAME.registerComponent('mytarget', {
+    init: function () {
+      this.el.addEventListener('targetFound', event => {
+        console.log("target found");
+
+        // Use a small delay to ensure the entity is active in the scene
+        setTimeout(() => {
+          const models = document.querySelectorAll('a-gltf-model');
+          models.forEach((model) => {
+            // 1. Remove the component entirely to clear the internal state
+            model.removeAttribute('animation-mixer');
+
+            // 2. Re-add it immediately with timeScale 1
+            // This forces a complete re-initialization of the Three.js mixer
+            model.setAttribute('animation-mixer', {
+              clip: '*',
+              loop: 'once',
+              clampWhenFinished: true,
+              timeScale: 1
             });
           });
-          this.el.addEventListener('targetLost', event => {
-            console.log("target found");
-          });
-          //this.el.emit('targetFound');
-        }
+        }, 100);
+
+        showPortfolio(() => {
+          setTimeout(() => {
+            showInfo();
+          }, 300);
+        });
       });
+
+      this.el.addEventListener('targetLost', event => {
+        console.log("target lost");
+        document.querySelectorAll('a-gltf-model').forEach((model) => {
+          // Stop the animation immediately
+          model.setAttribute('animation-mixer', { timeScale: 0 });
+        });
+      });
+    }
+  });
     </script>
 
     <style>
@@ -220,14 +261,14 @@
     <div class="example-container">
       <div id="example-scanning-overlay" class="hidden">
 	<div class="inner">
-	  <img src="./assets/card-example/card.png"/>
+	  <img src="./assets/card-example/eram_card.jpg"/>
 	  <div class="scanline"></div>
 	</div>
       </div>
 
-      <a-scene mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/card.mind; showStats: false; uiScanning: #example-scanning-overlay;" embedded color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-scene mindar-image="imageTargetSrc: ./assets/card-example/Targets/eram_target.mind; showStats: false; uiScanning: #example-scanning-overlay;" embedded color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         <a-assets>
-          <img id="card" src="./assets/card-example/card.png" />
+          <img id="card" src="./assets/card-example/eram_card.jpg" />
           <img id="icon-web" src="./assets/card-example/icons/web.png" />
           <img id="icon-location" src="./assets/card-example/icons/location.png" />
           <img id="icon-profile" src="./assets/card-example/icons/profile.png" />
@@ -242,14 +283,18 @@
           <img id="coffeemachine-preview" src="./assets/card-example/portfolio/coffeemachine-preview.png" />
           <img id="peak-preview" src="./assets/card-example/portfolio/peak-preview.png" />
           
-          <a-asset-item id="avatarModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/softmind/scene.gltf"></a-asset-item>
+          <a-asset-item id="avatarModel1" src="./assets/card-example/Plan.glb"></a-asset-item>
+          <a-asset-item id="ERAM_Logo" src="./assets/card-example/Models/S1/ERAM_animated.glb"></a-asset-item>
+          <a-asset-item id="ERAM_Box" src="./assets/card-example/Models/S1/ERAM_Box.glb"></a-asset-item>
+          <a-asset-item id="ERAM_Doors" src="./assets/card-example/Models/S1/ERAM_Doors.glb"></a-asset-item>
+          <a-asset-item id="ERAM_Occluder" src="./assets/card-example/Models/S1/ERAM_occulder.glb"></a-asset-item>
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable">
         </a-camera>
 
         <a-entity id="mytarget" mytarget mindar-image-target="targetIndex: 0">
-          <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+          <!-- <a-plane src="#card" position="0 0 0" height="0.62" width="1" rotation="0 0 0"></a-plane> -->
 
           <a-entity visible=false id="portfolio-panel" position="0 0 -0.01">
             <a-text value="Portfolio" color="black" align="center" width="2" position="0 0.4 0"></a-text>
@@ -271,23 +316,26 @@
             <a-image visible=false id="portfolio-right-button" class="clickable" src="#icon-right" position="0.7 0 0" height="0.15" width="0.15"></a-image>
           </a-entity>
 
-          <a-image visible=false id="profile-button" class="clickable" src="#icon-profile" position="-0.42 -0.5 0" height="0.15" width="0.15"
-            animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-          ></a-image>
+ <a-image visible="false" id="profile-button" class="clickable" src="#icon-profile" position="-0.6 0.3 0" height="0.15" width="0.15"
+  animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
+></a-image>
 
-          <a-image visible=false id="web-button" class="clickable" src="#icon-web" alpha-test="0.5" position="-0.14 -0.5 0" height="0.15" width="0.15"
-            animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-          ></a-image>
+<a-image visible="false" id="web-button" class="clickable" src="#icon-web" alpha-test="0.5" position="-0.6 0.1 0" height="0.15" width="0.15"
+  animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
+></a-image>
 
-          <a-image visible=false id="email-button" class="clickable" src="#icon-email"  position="0.14 -0.5 0" height="0.15" width="0.15"
-            animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-          ></a-image>
+<a-image visible="false" id="email-button" class="clickable" src="#icon-email" position="-0.6 -0.1 0" height="0.15" width="0.15"
+  animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
+></a-image>
 
-          <a-image visible=false id="location-button" class="clickable" src="#icon-location" position="0.42 -0.5 0" height="0.15" width="0.15"
-            animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-          ></a-image>
+<a-image visible="false" id="location-button" class="clickable" src="#icon-location" position="-0.6 -0.3 0" height="0.15" width="0.15"
+  animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
+></a-image>
 
-          <a-gltf-model id="avatar" rotation="0 0 0" position="0 -0.25 0" scale="0.004 0.004 0.004" src="#avatarModel"></a-gltf-model>
+          <a-gltf-model id="avatar4" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_Occluder" occluder material="side: double" render-order="0"></a-gltf-model>
+          <a-gltf-model id="avatar3" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_Doors" occluder material="side: double" render-order="0" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
+          <a-gltf-model id="avatar1" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_Logo" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
+          <a-gltf-model id="avatar2" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_Box"></a-gltf-model>
 
           <a-text id="text" class="clickable" value="" color="black" align="center" width="2" position="0 -1 0" geometry="primitive:plane; height: 0.1; width: 2;" material="opacity: 0.5"></a-text>
         </a-entity>
