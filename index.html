@@ -8,7 +8,7 @@
 
     <script>
         // Configuration variables
-        const PORTFOLIO_ITEM_ID = 'Signage-item';
+        let PORTFOLIO_ITEM_ID = 'Signage-item';
 
         AFRAME.registerComponent('occluder', {
           init: function () {
@@ -68,44 +68,60 @@
         });
       }
 
-      const showPortfolio = (done) => {
-        const portfolio = document.querySelector("#portfolio-panel");
-        const portfolioLeftButton = document.querySelector("#portfolio-left-button");
-        const portfolioRightButton = document.querySelector("#portfolio-right-button");
-        // const paintandquestPreviewButton = document.querySelector("#paintandquest-preview-button");
+const showPortfolio = (done) => {
+  const portfolio = document.querySelector("#portfolio-panel");
+  const portfolioLeftButton = document.querySelector("#portfolio-left-button");
+  const portfolioRightButton = document.querySelector("#portfolio-right-button");
+  let currentItem = 0;
 
-        let x = 0;
-        let currentItem = 0;
+  portfolio.setAttribute("visible", true);
+  portfolioLeftButton.setAttribute("visible", true);
+  portfolioRightButton.setAttribute("visible", true);
 
-        // Count the number of portfolio items dynamically
-        let numItems = 0;
-        while (document.querySelector(`#${PORTFOLIO_ITEM_ID}${numItems}`)) {
-          numItems++;
-        }
+  // MOVE THE numItems LOGIC INSIDE showPortfolioItem
+  const showPortfolioItem = (item) => {
+    // 1. First, find how many items exist for the CURRENT active category
+    let numItems = 0;
+    while (document.querySelector(`#${PORTFOLIO_ITEM_ID.trim()}${numItems}`)) {
+      numItems++;
+    }
 
-        portfolio.setAttribute("visible", true);
+    // 2. Loop through and set visibility, only if the element is found
+    // We check all possible items in the DOM to ensure we hide the old category too
+    const allPortfolioItems = document.querySelectorAll('[id*="-item"]');
+    allPortfolioItems.forEach(el => el.setAttribute("visible", false));
 
-        const showPortfolioItem = (item) => {
-          for (let i = 0; i < numItems; i++) {
-            document.querySelector(`#${PORTFOLIO_ITEM_ID}` + i).setAttribute("visible", i === item);
-          }
-        }
-        
-        portfolioLeftButton.setAttribute("visible", true);
-        portfolioRightButton.setAttribute("visible", true);
-        portfolioLeftButton.addEventListener('click', () => {
-          currentItem = (currentItem + 1) % numItems;
-          showPortfolioItem(currentItem);
-        });
-        portfolioRightButton.addEventListener('click', () => {
-          currentItem = (currentItem - 1 + numItems) % numItems;
-          showPortfolioItem(currentItem);
-        });
+    // 3. Show only the specific item from the new category
+    const activeEl = document.querySelector(`#${PORTFOLIO_ITEM_ID.trim()}${item}`);
+    if (activeEl) {
+      activeEl.setAttribute("visible", true);
+    }
+    
+    return numItems; // Return this to update the click listeners
+  };
 
-        setTimeout(() => {
-          done();
-        }, 500);
-      }
+  // Update listeners to use the dynamic count
+  portfolioLeftButton.onclick = () => {
+    let num = 0;
+    while (document.querySelector(`#${PORTFOLIO_ITEM_ID.trim()}${num}`)) { num++; }
+    currentItem = (currentItem + 1) % num;
+    showPortfolioItem(currentItem);
+  };
+
+  portfolioRightButton.onclick = () => {
+    let num = 0;
+    while (document.querySelector(`#${PORTFOLIO_ITEM_ID.trim()}${num}`)) { num++; }
+    currentItem = (currentItem - 1 + num) % num;
+    showPortfolioItem(currentItem);
+  };
+
+  // Initial show
+  showPortfolioItem(currentItem);
+
+  setTimeout(() => {
+    done();
+  }, 500);
+}
 
       const moveObject = (el, deltaZ) => {
         const currentPos = el.getAttribute('position');
@@ -172,12 +188,12 @@
                     ourServices.setAttribute('visible', true);
 
                     const serviceLightMap = [
-                      { serviceId: 'Services_Signage', lightId: 'Services_Light1' },
-                      { serviceId: 'Services_Graphic', lightId: 'Services_Light2' },
-                      { serviceId: 'Services_Gift', lightId: 'Services_Light3' },
-                      { serviceId: 'Services_Printing', lightId: 'Services_Light4' },
-                      { serviceId: 'Services_Package', lightId: 'Services_Light5' },
-                      { serviceId: 'Services_Garden', lightId: 'Services_Light6' }
+                      { serviceId: 'Services_Signage', lightId: 'Services_Light1', portfolioID: 'Signage-item' },
+                      { serviceId: 'Services_Graphic', lightId: 'Services_Light2', portfolioID: 'Graphic-item' },
+                      { serviceId: 'Services_Gift', lightId: 'Services_Light3', portfolioID: 'Gift-item' },
+                      { serviceId: 'Services_Printing', lightId: 'Services_Light4', portfolioID: 'Printing-item' },
+                      { serviceId: 'Services_Package', lightId: 'Services_Light5', portfolioID: 'Package-item' },
+                      { serviceId: 'Services_Garden', lightId: 'Services_Light6', portfolioID: 'Garden-item' }
                     ];
 
                     // Turn all service lights off initially
@@ -191,10 +207,12 @@
                     // Add click listeners to bring services forward and turn on their light
                     let previousService = null;
                     let previousLight = null;
+                    let previousPortfolio = null;
                     
-                    serviceLightMap.forEach(({ serviceId, lightId }) => {
+                    serviceLightMap.forEach(({ serviceId, lightId, portfolioID }) => {
                       const el = document.getElementById(serviceId);
                       const lightEl = document.getElementById(lightId);
+                      const portEl = document.getElementById(portfolioID);
                       if (el) {
                         el.addEventListener('click', () => {
                           // If same object clicked, do nothing
@@ -206,6 +224,8 @@
                           if (previousService !== null) {
                             const prevEl = document.getElementById(previousService);
                             const prevLightEl = document.getElementById(previousLight);
+                            const prevPortEl = document.getElementById(previousPortfolio);
+
                             moveObject(prevEl, 0);
                             if (prevLightEl) {
                               prevLightEl.setAttribute('intensity', 0);
@@ -216,11 +236,15 @@
                           moveObject(el, 0.1);
                           if (lightEl) {
                             lightEl.setAttribute('intensity', 50);
+                            PORTFOLIO_ITEM_ID = portfolioID.trim();
+                            showPortfolio(() => { });
+                            console.log(PORTFOLIO_ITEM_ID);
                           }
                           
                           // Store as previous
                           previousService = serviceId;
                           previousLight = lightId;
+                          previousPortfolio = portfolioID;
                         });
                       }
                     });
@@ -231,11 +255,11 @@
 
                   // 5. Trigger UI sequence after cleanup
                   if (!this.uiStarted) {
-                    showPortfolio(() => {
+
                       setTimeout(() => {
                         showInfo();
                       }, 300);
-                    });
+
                     this.uiStarted = true;
                   }
                 }, { once: true });
@@ -355,7 +379,7 @@
           <!-- <video id="paintandquest-video-mp4" autoplay="false" loop="true" src="./assets/card-example/portfolio/paintandquest.mp4"></video>
           <video id="paintandquest-video-webm" autoplay="false" loop="true" src="./assets/card-example/portfolio/paintandquest.webm"></video> -->
           
-          // Signage portfolio items
+          <!-- Signage portfolio items -->
           <img id="Exterior-signage" src="./assets/card-example/portfolio/1.jpg" />
           <img id="Interior-signage" src="./assets/card-example/portfolio/2.jpg" />
           <img id="Directional-signage" src="./assets/card-example/portfolio/3.jpg" />
@@ -367,7 +391,7 @@
           <img id="Exhibition-signage" src="./assets/card-example/portfolio/9.jpg" />
           <img id="EventManagement-signage" src="./assets/card-example/portfolio/10.jpg" />
 
-          // Graphic design portfolio items
+          <!-- Graphic design portfolio items -->
           <img id="logo-graphic" src="./assets/card-example/portfolio/11.jpg" />
           <img id="branding-graphic" src="./assets/card-example/portfolio/12.jpg" />
           <img id="print-graphic" src="./assets/card-example/portfolio/13.jpg" />
@@ -375,14 +399,14 @@
           <img id="Package-graphic" src="./assets/card-example/portfolio/15.jpg" />
           <img id="illustration-graphic" src="./assets/card-example/portfolio/16.jpg" />
 
-          // Gift portfolio items
+          <!-- Gift portfolio items -->
           <img id="Custom-gift" src="./assets/card-example/portfolio/17.jpg" />
           <img id="Trophy-gift" src="./assets/card-example/portfolio/18.jpg" />
           <img id="lanyards-gift" src="./assets/card-example/portfolio/19.jpg" />
           <img id="uniforms-gift" src="./assets/card-example/portfolio/20.jpg" />
           <img id="safetyWears-gift" src="./assets/card-example/portfolio/21.jpg" />
 
-          // Printing portfolio items
+          <!-- Printing portfolio items -->
           <img id="Brochure-printing" src="./assets/card-example/portfolio/22.jpg" />
           <img id="Digital-printing" src="./assets/card-example/portfolio/23.jpg" />
           <img id="silkScreen-printing" src="./assets/card-example/portfolio/24.jpg" />
@@ -390,7 +414,7 @@
           <img id="Forms-printing" src="./assets/card-example/portfolio/26.jpg" />
           <img id="Binding-printing" src="./assets/card-example/portfolio/27.jpg" />
 
-          // Packaging portfolio items
+          <!-- Packaging portfolio items -->
           <img id="Custom-packaging" src="./assets/card-example/portfolio/28.jpg " />
           <img id="Solutions-packaging" src="./assets/card-example/portfolio/29.jpg" />
           <img id="versatile-packaging" src="./assets/card-example/portfolio/30.jpg" />
@@ -398,7 +422,7 @@
           <img id="specialty-packaging" src="./assets/card-example/portfolio/32.jpg" />
           <img id="sustainable-packaging" src="./assets/card-example/portfolio/33.jpg" />
 
-          // Garden portfolio items
+          <!-- Garden portfolio items -->
           <img id="Vertical1-garden" src="./assets/card-example/portfolio/34.jpg" />
           <img id="Vertical2-garden" src="./assets/card-example/portfolio/35.jpg" />
           <img id="Vertical3-garden" src="./assets/card-example/portfolio/36.jpg" />
@@ -431,6 +455,7 @@
         <a-light id="ERAM_Light" type="point" color="#FDDC5C" intensity="250" distance="2000" decay="5" position="0 0 -0.05"></a-light>
 
           <a-entity id="OurServices" visible="false">
+          <a-text value="OUR SERVICES" color="white" align="center" width="2" font="roboto" position="0 0.25 0.05"></a-text>
             <a-gltf-model id="Services_Occluder" src="#Services_OccluderAsset" rotation="90 0 0" scale="1 1 1" occluder material="side: double" render-order="0"></a-gltf-model>
             <a-gltf-model id="Services_Doors" src="#Services_DoorsAsset" rotation="90 0 0" scale="1 1 1" occluder material="side: double" render-order="0"></a-gltf-model>
             <a-gltf-model id="Services_Box" src="#Services_BoxAsset" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
@@ -448,7 +473,7 @@
             <a-light id="Services_Light6" type="point" color="#136207" intensity="50" distance="500" decay="2" position="0.3 -0.1 -0.05"></a-light>
           </a-entity>
 
-          <a-entity visible=false id="portfolio-panel" position="1.4 0 0.01">
+          <a-entity visible=false id="portfolio-panel" position="1.2 0 0.01">
             <!-- <a-text value="Portfolio" color="black" align="center" width="2" position="0 0.4 0"></a-text>
             <a-entity id="portfolio-item0">
               <a-video id="paintandquest-video-link" webkit-playsinline playsinline width="1" height="0.552" position="0 0 0"></a-video>
@@ -456,7 +481,7 @@
               </a-image>
             </a-entity> -->
 
-            // Signage portfolio assets
+            <!-- Signage portfolio assets -->
 
             <a-entity id="Signage-item0" visible=false>
               <a-image src="#Exterior-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
@@ -499,7 +524,7 @@
               </a-image>
             </a-entity>
 
-            // Graphic design portfolio assets
+            <!-- Graphic design portfolio assets -->
             <a-entity id="Graphic-item0" visible=false>
               <a-image src="#logo-graphic" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
               </a-image>
@@ -525,7 +550,7 @@
                 </a-image>
               </a-entity>
 
-              // Gift portfolio assets
+              <!-- Gift portfolio assets -->
               <a-entity id="Gift-item0" visible=false>
                 <a-image src="#Custom-gift" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
@@ -547,7 +572,7 @@
                 </a-image>
               </a-entity>
 
-              // Printing portfolio assets
+              <!-- Printing portfolio assets -->
               <a-entity id="Printing-item0" visible=false>
                 <a-image src="#Brochure-printing" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
@@ -573,33 +598,33 @@
                 </a-image>
               </a-entity>
 
-              // Packaging portfolio assets
-              <a-entity id="Packaging-item0" visible=false>
+              <!-- Packaging portfolio assets -->
+              <a-entity id="Package-item0" visible=false>
                 <a-image src="#Custom-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
               </a-entity>
-              <a-entity id="Packaging-item1" visible=false>
+              <a-entity id="Package-item1" visible=false>
                 <a-image src="#Solutions-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
               </a-entity>
-              <a-entity id="Packaging-item2" visible=false>
+              <a-entity id="Package-item2" visible=false>
                 <a-image src="#versatile-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
               </a-entity>
-              <a-entity id="Packaging-item3" visible=false>
+              <a-entity id="Package-item3" visible=false>
                 <a-image src="#flexible-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
               </a-entity>
-              <a-entity id="Packaging-item4" visible=false>
+              <a-entity id="Package-item4" visible=false>
                 <a-image src="#specialty-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
               </a-entity>
-              <a-entity id="Packaging-item5" visible=false>
+              <a-entity id="Package-item5" visible=false>
                 <a-image src="#sustainable-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
               </a-entity>
 
-              // Garden portfolio assets
+              <!-- Garden portfolio assets -->
               <a-entity id="Garden-item0" visible=false>
                 <a-image src="#Vertical1-garden" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
@@ -612,10 +637,10 @@
                 <a-image src="#Vertical3-garden" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
                 </a-image>
               </a-entity>
-              
 
-            <a-image visible=false id="portfolio-left-button" class="clickable" src="#icon-left" position="-0.7 0.1 0.02" height="0.15" width="0.15"></a-image>
-            <a-image visible=false id="portfolio-right-button" class="clickable" src="#icon-right" position="-0.7 -0.1 0.02" height="0.15" width="0.15"></a-image>
+
+            <a-image visible=false id="portfolio-left-button" class="clickable" src="#icon-left" position="-0.65 0.1 0.02" height="0.15" width="0.15"></a-image>
+            <a-image visible=false id="portfolio-right-button" class="clickable" src="#icon-right" position="-0.65 -0.1 0.02" height="0.15" width="0.15"></a-image>
 
           </a-entity>
 
@@ -631,7 +656,7 @@
             height="0.15" width="0.15"
             animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-image>
 
-          <a-text visible="false" id="text" class="clickable" value="" color="black" align="center" width="2" position="0 -0.5 0.02" geometry="primitive:plane; height: 0.1; width: 1.8;" material="opacity: 0.5"></a-text>
+          <a-text visible="false" id="text" class="clickable" value="" color="black" align="center" width="1" position="0 -0.3 0.02" geometry="primitive:plane; height: 0.05; width: 0.9;" material="opacity: 0.5"></a-text>
 
           <a-gltf-model id="ERAM_Occluder" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_OccluderAsset" occluder material="side: double" render-order="0"></a-gltf-model>
           <a-gltf-model id="ERAM_Doors" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_DoorsAsset" occluder material="side: double" render-order="0" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
