@@ -7,6 +7,9 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <script>
+        // Configuration variables
+        const PORTFOLIO_ITEM_ID = 'Signage-item';
+
         AFRAME.registerComponent('occluder', {
           init: function () {
             this.el.addEventListener('model-loaded', () => {
@@ -29,46 +32,38 @@
         });
 
       const showInfo = () => {
-        let y = 0;
-        const profileButton = document.querySelector("#profile-button");
         const webButton = document.querySelector("#web-button");
-        const emailButton = document.querySelector("#email-button");
+        const phoneButton = document.querySelector("#phone-button");
         const locationButton = document.querySelector("#location-button");
         const text = document.querySelector("#text");
 
-        profileButton.setAttribute("visible", true);
+        webButton.setAttribute("visible", true);
         setTimeout(() => {
-          webButton.setAttribute("visible", true);
+          phoneButton.setAttribute("visible", true);
         }, 300);
         setTimeout(() => {
-          emailButton.setAttribute("visible", true);
-        }, 600);
-        setTimeout(() => {
           locationButton.setAttribute("visible", true);
-        }, 900);
+          text.setAttribute("visible", true);
+        }, 600);
 
         let currentTab = '';
         webButton.addEventListener('click', function (evt) {
-          text.setAttribute("value", "https://softmind.tech");
+          text.setAttribute("value", "https://uarkprinting.com");
           currentTab = 'web';
         });
-        emailButton.addEventListener('click', function (evt) {
-          text.setAttribute("value", "hello@softmind.tech");
-          currentTab = 'email';
-        });
-        profileButton.addEventListener('click', function (evt) {
-          text.setAttribute("value", "AR, VR solutions and consultation");
-          currentTab = 'profile';
+        phoneButton.addEventListener('click', function (evt) {
+          text.setAttribute("value", "+966 13 802 1919");
+          currentTab = 'phone';
         });
         locationButton.addEventListener('click', function (evt) {
           console.log("loc");
-          text.setAttribute("value", "Vancouver, Canada | Hong Kong");
+          text.setAttribute("value", "2ب، 4416, Dammam 34341, Saudi Arabia");
           currentTab = 'location';
         });
 
         text.addEventListener('click', function (evt) {
           if (currentTab === 'web') {
-            window.location.href="https://softmind.tech";
+            window.location.href="https://uarkprinting.com/contact.php";
           }
         });
       }
@@ -77,106 +72,186 @@
         const portfolio = document.querySelector("#portfolio-panel");
         const portfolioLeftButton = document.querySelector("#portfolio-left-button");
         const portfolioRightButton = document.querySelector("#portfolio-right-button");
-        const paintandquestPreviewButton = document.querySelector("#paintandquest-preview-button");
+        // const paintandquestPreviewButton = document.querySelector("#paintandquest-preview-button");
 
         let x = 0;
         let currentItem = 0;
 
+        // Count the number of portfolio items dynamically
+        let numItems = 0;
+        while (document.querySelector(`#${PORTFOLIO_ITEM_ID}${numItems}`)) {
+          numItems++;
+        }
+
         portfolio.setAttribute("visible", true);
 
         const showPortfolioItem = (item) => {
-          for (let i = 0; i <= 2; i++) {
-            document.querySelector("#portfolio-item" + i).setAttribute("visible", i === item);
+          for (let i = 0; i < numItems; i++) {
+            document.querySelector(`#${PORTFOLIO_ITEM_ID}` + i).setAttribute("visible", i === item);
           }
         }
-        const id = setInterval(() => {
-          x += 0.008;
-          if (x >= 1.3) {
-            clearInterval(id);
-            portfolioLeftButton.setAttribute("visible", true);
-            portfolioRightButton.setAttribute("visible", true);
-            portfolioLeftButton.addEventListener('click', () => {
-              currentItem = (currentItem + 1) % 3;
-              showPortfolioItem(currentItem);
-            });
-            portfolioRightButton.addEventListener('click', () => {
-              currentItem = (currentItem - 1 + 3) % 3;
-              showPortfolioItem(currentItem);
-            });
+        
+        portfolioLeftButton.setAttribute("visible", true);
+        portfolioRightButton.setAttribute("visible", true);
+        portfolioLeftButton.addEventListener('click', () => {
+          currentItem = (currentItem + 1) % numItems;
+          showPortfolioItem(currentItem);
+        });
+        portfolioRightButton.addEventListener('click', () => {
+          currentItem = (currentItem - 1 + numItems) % numItems;
+          showPortfolioItem(currentItem);
+        });
 
-            paintandquestPreviewButton.addEventListener('click', () => {
-              paintandquestPreviewButton.setAttribute("visible", false);
-              const testVideo = document.createElement( "video" );
-              const canplayWebm = testVideo.canPlayType( 'video/webm; codecs="vp8, vorbis"' );
-              if (canplayWebm == "") {
-                document.querySelector("#paintandquest-video-link").setAttribute("src", "#paintandquest-video-mp4");
-                document.querySelector("#paintandquest-video-mp4").play();
-              } else {
-                document.querySelector("#paintandquest-video-link").setAttribute("src", "#paintandquest-video-webm");
-                document.querySelector("#paintandquest-video-webm").play();
+        setTimeout(() => {
+          done();
+        }, 500);
+      }
+
+      const moveObject = (el, deltaZ) => {
+        const currentPos = el.getAttribute('position');
+        let z = currentPos.z;
+        const targetZ = deltaZ;
+        const id = setInterval(() => {
+          z += 0.008;
+          if (z >= targetZ) {
+            z = targetZ;
+            clearInterval(id);
+          }
+          el.setAttribute('position', `${currentPos.x} ${currentPos.y} ${z}`);
+        }, 10);
+      }
+
+        AFRAME.registerComponent('mytarget', {
+          init: function () {
+            this.el.addEventListener('targetFound', event => {
+              console.log("target found");
+              const models = document.querySelectorAll('a-gltf-model');
+
+              // Select the logo specifically to watch its animation
+              const logo = document.querySelector('a-gltf-model#ERAM_Logo');
+              const servicesDoors = document.querySelector('#Services_Doors');
+
+              models.forEach((model) => {
+                // Start/Resume the animation
+                model.setAttribute('animation-mixer', {
+                  clip: '*',
+                  loop: 'once',
+                  clampWhenFinished: true,
+                  timeScale: 1
+                });
+              });
+
+              // Keep Services_Doors paused until OurServices becomes visible
+              if (servicesDoors) {
+                servicesDoors.setAttribute('animation-mixer', {
+                  clip: '*',
+                  loop: 'once',
+                  clampWhenFinished: true,
+                  timeScale: 0
+                });
+              }
+
+              // 1. Listen for the Logo to finish
+              if (logo && !this.animationHandled) {
+                logo.addEventListener('animation-finished', () => {
+                  console.log("Logo animation finished! Cleaning up...");
+
+                  // 2. Exact matches for the IDs in your HTML
+                  const idsToRemove = ['ERAM_Box', 'ERAM_Doors', 'ERAM_Occluder', 'ERAM_Light'];
+
+                  idsToRemove.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && el.parentNode) {
+                      el.parentNode.removeChild(el);
+                    }
+                  });
+
+                  // 3. Show the services group and play its doors animation
+                  const ourServices = document.querySelector('#OurServices');
+                  if (ourServices) {
+                    ourServices.setAttribute('visible', true);
+
+                    const serviceLightMap = [
+                      { serviceId: 'Services_Signage', lightId: 'Services_Light1' },
+                      { serviceId: 'Services_Graphic', lightId: 'Services_Light2' },
+                      { serviceId: 'Services_Gift', lightId: 'Services_Light3' },
+                      { serviceId: 'Services_Printing', lightId: 'Services_Light4' },
+                      { serviceId: 'Services_Package', lightId: 'Services_Light5' },
+                      { serviceId: 'Services_Garden', lightId: 'Services_Light6' }
+                    ];
+
+                    // Turn all service lights off initially
+                    serviceLightMap.forEach(({ lightId }) => {
+                      const lightEl = document.getElementById(lightId);
+                      if (lightEl) {
+                        lightEl.setAttribute('intensity', 0);
+                      }
+                    });
+
+                    // Add click listeners to bring services forward and turn on their light
+                    let previousService = null;
+                    let previousLight = null;
+                    
+                    serviceLightMap.forEach(({ serviceId, lightId }) => {
+                      const el = document.getElementById(serviceId);
+                      const lightEl = document.getElementById(lightId);
+                      if (el) {
+                        el.addEventListener('click', () => {
+                          // If same object clicked, do nothing
+                          if (previousService === serviceId) {
+                            return;
+                          }
+                          
+                          // Reset previous service
+                          if (previousService !== null) {
+                            const prevEl = document.getElementById(previousService);
+                            const prevLightEl = document.getElementById(previousLight);
+                            moveObject(prevEl, 0);
+                            if (prevLightEl) {
+                              prevLightEl.setAttribute('intensity', 0);
+                            }
+                          }
+                          
+                          // Activate new service
+                          moveObject(el, 0.1);
+                          if (lightEl) {
+                            lightEl.setAttribute('intensity', 50);
+                          }
+                          
+                          // Store as previous
+                          previousService = serviceId;
+                          previousLight = lightId;
+                        });
+                      }
+                    });
+                  }
+                  if (servicesDoors) {
+                    servicesDoors.setAttribute('animation-mixer', { timeScale: 1 });
+                  }
+
+                  // 5. Trigger UI sequence after cleanup
+                  if (!this.uiStarted) {
+                    showPortfolio(() => {
+                      setTimeout(() => {
+                        showInfo();
+                      }, 300);
+                    });
+                    this.uiStarted = true;
+                  }
+                }, { once: true });
+
+                this.animationHandled = true;
               }
             });
 
-            setTimeout(() => {
-              done();
-            }, 500);
-          }
-          portfolio.setAttribute("position", x + " 0 -0.01");
-        }, 10);
-      }
-
-      const showAvatar = (onDone) => {
-        const avatar = document.querySelector("#avatar");
-        let z = -0.3;
-        const id = setInterval(() => {
-          z += 0.008;
-          if (z >= 0.3) {
-            clearInterval(id);
-            onDone();
-          }
-          avatar.setAttribute("position", "0 -0.25 " + z);
-        }, 10);
-      }
-
-  AFRAME.registerComponent('mytarget', {
-    init: function () {
-      this.el.addEventListener('targetFound', event => {
-        console.log("target found");
-
-        // Use a small delay to ensure the entity is active in the scene
-        setTimeout(() => {
-          const models = document.querySelectorAll('a-gltf-model');
-          models.forEach((model) => {
-            // 1. Remove the component entirely to clear the internal state
-            model.removeAttribute('animation-mixer');
-
-            // 2. Re-add it immediately with timeScale 1
-            // This forces a complete re-initialization of the Three.js mixer
-            model.setAttribute('animation-mixer', {
-              clip: '*',
-              loop: 'once',
-              clampWhenFinished: true,
-              timeScale: 1
+            this.el.addEventListener('targetLost', event => {
+              console.log("target lost");
+              document.querySelectorAll('a-gltf-model').forEach((model) => {
+                model.setAttribute('animation-mixer', { timeScale: 0 });
+              });
             });
-          });
-        }, 100);
-
-        showPortfolio(() => {
-          setTimeout(() => {
-            showInfo();
-          }, 300);
+          }
         });
-      });
-
-      this.el.addEventListener('targetLost', event => {
-        console.log("target lost");
-        document.querySelectorAll('a-gltf-model').forEach((model) => {
-          // Stop the animation immediately
-          model.setAttribute('animation-mixer', { timeScale: 0 });
-        });
-      });
-    }
-  });
     </script>
 
     <style>
@@ -277,67 +352,291 @@
           <img id="icon-play" src="./assets/card-example/icons/play.png" />
           <img id="icon-left" src="./assets/card-example/icons/left.png" />
           <img id="icon-right" src="./assets/card-example/icons/right.png" />
-          <img id="paintandquest-preview" src="./assets/card-example/portfolio/paintandquest-preview.png" />
-          <video id="paintandquest-video-mp4" autoplay="false" loop="true" src="./assets/card-example/portfolio/paintandquest.mp4"></video>
-          <video id="paintandquest-video-webm" autoplay="false" loop="true" src="./assets/card-example/portfolio/paintandquest.webm"></video>
-          <img id="coffeemachine-preview" src="./assets/card-example/portfolio/coffeemachine-preview.png" />
-          <img id="peak-preview" src="./assets/card-example/portfolio/peak-preview.png" />
+          <!-- <video id="paintandquest-video-mp4" autoplay="false" loop="true" src="./assets/card-example/portfolio/paintandquest.mp4"></video>
+          <video id="paintandquest-video-webm" autoplay="false" loop="true" src="./assets/card-example/portfolio/paintandquest.webm"></video> -->
           
+          // Signage portfolio items
+          <img id="Exterior-signage" src="./assets/card-example/portfolio/1.jpg" />
+          <img id="Interior-signage" src="./assets/card-example/portfolio/2.jpg" />
+          <img id="Directional-signage" src="./assets/card-example/portfolio/3.jpg" />
+          <img id="WallBranding-signage" src="./assets/card-example/portfolio/4.jpg" />
+          <img id="DisplayStand-signage" src="./assets/card-example/portfolio/5.jpg" />
+          <img id="Digital-signage" src="./assets/card-example/portfolio/6.jpg" />
+          <img id="vehicle-signage" src="./assets/card-example/portfolio/7.jpg" />
+          <img id="Road-signage" src="./assets/card-example/portfolio/8.jpg" />
+          <img id="Exhibition-signage" src="./assets/card-example/portfolio/9.jpg" />
+          <img id="EventManagement-signage" src="./assets/card-example/portfolio/10.jpg" />
+
+          // Graphic design portfolio items
+          <img id="logo-graphic" src="./assets/card-example/portfolio/11.jpg" />
+          <img id="branding-graphic" src="./assets/card-example/portfolio/12.jpg" />
+          <img id="print-graphic" src="./assets/card-example/portfolio/13.jpg" />
+          <img id="digital-graphic" src="./assets/card-example/portfolio/14.jpg" />
+          <img id="Package-graphic" src="./assets/card-example/portfolio/15.jpg" />
+          <img id="illustration-graphic" src="./assets/card-example/portfolio/16.jpg" />
+
+          // Gift portfolio items
+          <img id="Custom-gift" src="./assets/card-example/portfolio/17.jpg" />
+          <img id="Trophy-gift" src="./assets/card-example/portfolio/18.jpg" />
+          <img id="lanyards-gift" src="./assets/card-example/portfolio/19.jpg" />
+          <img id="uniforms-gift" src="./assets/card-example/portfolio/20.jpg" />
+          <img id="safetyWears-gift" src="./assets/card-example/portfolio/21.jpg" />
+
+          // Printing portfolio items
+          <img id="Brochure-printing" src="./assets/card-example/portfolio/22.jpg" />
+          <img id="Digital-printing" src="./assets/card-example/portfolio/23.jpg" />
+          <img id="silkScreen-printing" src="./assets/card-example/portfolio/24.jpg" />
+          <img id="uv-printing" src="./assets/card-example/portfolio/25.jpg" />
+          <img id="Forms-printing" src="./assets/card-example/portfolio/26.jpg" />
+          <img id="Binding-printing" src="./assets/card-example/portfolio/27.jpg" />
+
+          // Packaging portfolio items
+          <img id="Custom-packaging" src="./assets/card-example/portfolio/28.jpg " />
+          <img id="Solutions-packaging" src="./assets/card-example/portfolio/29.jpg" />
+          <img id="versatile-packaging" src="./assets/card-example/portfolio/30.jpg" />
+          <img id="flexible-packaging" src="./assets/card-example/portfolio/31.jpg" />
+          <img id="specialty-packaging" src="./assets/card-example/portfolio/32.jpg" />
+          <img id="sustainable-packaging" src="./assets/card-example/portfolio/33.jpg" />
+
+          // Garden portfolio items
+          <img id="Vertical1-garden" src="./assets/card-example/portfolio/34.jpg" />
+          <img id="Vertical2-garden" src="./assets/card-example/portfolio/35.jpg" />
+          <img id="Vertical3-garden" src="./assets/card-example/portfolio/36.jpg" />
+
           <a-asset-item id="avatarModel1" src="./assets/card-example/Plan.glb"></a-asset-item>
-          <a-asset-item id="ERAM_Logo" src="./assets/card-example/Models/S1/ERAM_animated.glb"></a-asset-item>
-          <a-asset-item id="ERAM_Box" src="./assets/card-example/Models/S1/ERAM_Box.glb"></a-asset-item>
-          <a-asset-item id="ERAM_Doors" src="./assets/card-example/Models/S1/ERAM_Doors.glb"></a-asset-item>
-          <a-asset-item id="ERAM_Occluder" src="./assets/card-example/Models/S1/ERAM_occulder.glb"></a-asset-item>
+          <a-asset-item id="ERAM_LogoAsset" src="./assets/card-example/Models/S1/ERAM_animated.glb"></a-asset-item>
+          <a-asset-item id="ERAM_BoxAsset" src="./assets/card-example/Models/S1/ERAM_Box.glb"></a-asset-item>
+          <a-asset-item id="ERAM_DoorsAsset" src="./assets/card-example/Models/S1/ERAM_Doors.glb"></a-asset-item>
+          <a-asset-item id="ERAM_OccluderAsset" src="./assets/card-example/Models/S1/ERAM_occulder.glb"></a-asset-item>
+          <a-asset-item id="Services_OccluderAsset" src="./assets/card-example/Models/S2/Service_occluder.glb"></a-asset-item>
+          <a-asset-item id="Services_BoxAsset" src="./assets/card-example/Models/S2/Service_Box.glb"></a-asset-item>
+          <a-asset-item id="Services_DoorsAsset" src="./assets/card-example/Models/S2/Service_Doors.glb"></a-asset-item>
+          <a-asset-item id="Services_SignageAsset" src="./assets/card-example/Models/S2/Signage.glb"></a-asset-item>
+          <a-asset-item id="Services_GraphicAsset" src="./assets/card-example/Models/S2/Graphics.glb"></a-asset-item>
+          <a-asset-item id="Services_GiftAsset" src="./assets/card-example/Models/S2/Gift.glb"></a-asset-item>
+          <a-asset-item id="Services_PrintingAsset" src="./assets/card-example/Models/S2/Printing.glb"></a-asset-item>
+          <a-asset-item id="Services_PackageAsset" src="./assets/card-example/Models/S2/Packaging.glb"></a-asset-item>
+          <a-asset-item id="Services_GardenAsset" src="./assets/card-example/Models/S2/Garden.glb"></a-asset-item>
+
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable">
         </a-camera>
 
+        <a-light type="ambient" color="#BBB" intensity="0.5"></a-light>
+        <a-light type="directional" color="#FFF" intensity="0.5" position="-1 1 2"></a-light>
+
         <a-entity id="mytarget" mytarget mindar-image-target="targetIndex: 0">
           <!-- <a-plane src="#card" position="0 0 0" height="0.62" width="1" rotation="0 0 0"></a-plane> -->
+        <a-light id="ERAM_Light" type="point" color="#FDDC5C" intensity="250" distance="2000" decay="5" position="0 0 -0.05"></a-light>
 
-          <a-entity visible=false id="portfolio-panel" position="0 0 -0.01">
-            <a-text value="Portfolio" color="black" align="center" width="2" position="0 0.4 0"></a-text>
+          <a-entity id="OurServices" visible="false">
+            <a-gltf-model id="Services_Occluder" src="#Services_OccluderAsset" rotation="90 0 0" scale="1 1 1" occluder material="side: double" render-order="0"></a-gltf-model>
+            <a-gltf-model id="Services_Doors" src="#Services_DoorsAsset" rotation="90 0 0" scale="1 1 1" occluder material="side: double" render-order="0"></a-gltf-model>
+            <a-gltf-model id="Services_Box" src="#Services_BoxAsset" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
+            <a-gltf-model id="Services_Signage" class="clickable" src="#Services_SignageAsset" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
+            <a-gltf-model id="Services_Graphic" class="clickable" src="#Services_GraphicAsset" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
+            <a-gltf-model id="Services_Gift" class="clickable" src="#Services_GiftAsset" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
+            <a-gltf-model id="Services_Printing" class="clickable" src="#Services_PrintingAsset" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
+            <a-gltf-model id="Services_Package" class="clickable" src="#Services_PackageAsset" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
+            <a-gltf-model id="Services_Garden" class="clickable" src="#Services_GardenAsset" rotation="90 0 0" scale="1 1 1"></a-gltf-model>
+            <a-light id="Services_Light1" type="point" color="#136207" intensity="50" distance="500" decay="2" position="-0.3 0.1 -0.05"></a-light>
+            <a-light id="Services_Light2" type="point" color="#136207" intensity="50" distance="500" decay="2" position="-0.3 -0.1 -0.05"></a-light>
+            <a-light id="Services_Light3" type="point" color="#136207" intensity="50" distance="500" decay="2" position="0 0.1 -0.05"></a-light>
+            <a-light id="Services_Light4" type="point" color="#136207" intensity="50" distance="500" decay="2" position="0 -0.1 -0.05"></a-light>
+            <a-light id="Services_Light5" type="point" color="#136207" intensity="50" distance="500" decay="2" position="0.3 0.1 -0.05"></a-light>
+            <a-light id="Services_Light6" type="point" color="#136207" intensity="50" distance="500" decay="2" position="0.3 -0.1 -0.05"></a-light>
+          </a-entity>
+
+          <a-entity visible=false id="portfolio-panel" position="1.4 0 0.01">
+            <!-- <a-text value="Portfolio" color="black" align="center" width="2" position="0 0.4 0"></a-text>
             <a-entity id="portfolio-item0">
               <a-video id="paintandquest-video-link" webkit-playsinline playsinline width="1" height="0.552" position="0 0 0"></a-video>
               <a-image id="paintandquest-preview-button" class="clickable" src="#paintandquest-preview" alpha-test="0.5" position="0 0 0" height="0.552" width="1">
               </a-image>
-            </a-entity>
-            <a-entity id="portfolio-item1" visible=false>
-              <a-image class="clickable" src="#coffeemachine-preview" alpha-test="0.5" position="0 0 0" height="0.552" width="1">
+            </a-entity> -->
+
+            // Signage portfolio assets
+
+            <a-entity id="Signage-item0" visible=false>
+              <a-image src="#Exterior-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
               </a-image>
             </a-entity>
-            <a-entity id="portfolio-item2" visible=false>
-              <a-image class="clickable" src="#peak-preview" alpha-test="0.5" position="0 0 0" height="0.552" width="1">
+            <a-entity id="Signage-item1" visible=false>
+              <a-image src="#Interior-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Signage-item2" visible=false>
+              <a-image src="#Directional-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Signage-item3" visible=false>
+              <a-image src="#WallBranding-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Signage-item4" visible=false>
+              <a-image src="#DisplayStand-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Signage-item5" visible=false>
+              <a-image src="#Digital-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Signage-item6" visible=false>
+              <a-image src="#vehicle-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Signage-item7" visible=false>
+              <a-image src="#Road-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Signage-item8" visible=false>
+              <a-image src="#Exhibition-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Signage-item9" visible=false>
+              <a-image src="#EventManagement-signage" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
               </a-image>
             </a-entity>
 
-            <a-image visible=false id="portfolio-left-button" class="clickable" src="#icon-left" position="-0.7 0 0" height="0.15" width="0.15"></a-image>
-            <a-image visible=false id="portfolio-right-button" class="clickable" src="#icon-right" position="0.7 0 0" height="0.15" width="0.15"></a-image>
+            // Graphic design portfolio assets
+            <a-entity id="Graphic-item0" visible=false>
+              <a-image src="#logo-graphic" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Graphic-item1" visible=false>
+              <a-image src="#branding-graphic" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Graphic-item2" visible=false>
+              <a-image src="#print-graphic" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+            <a-entity id="Graphic-item3" visible=false>
+              <a-image src="#digital-graphic" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+              </a-image>
+            </a-entity>
+              <a-entity id="Graphic-item4" visible=false>
+                <a-image src="#Package-graphic" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Graphic-item5" visible=false>
+                <a-image src="#illustration-graphic" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+
+              // Gift portfolio assets
+              <a-entity id="Gift-item0" visible=false>
+                <a-image src="#Custom-gift" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Gift-item1" visible=false>
+                <a-image src="#Trophy-gift" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Gift-item2" visible=false>
+                <a-image src="#lanyards-gift" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Gift-item3" visible=false>
+                <a-image src="#uniforms-gift" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Gift-item4" visible=false>
+                <a-image src="#safetyWears-gift" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+
+              // Printing portfolio assets
+              <a-entity id="Printing-item0" visible=false>
+                <a-image src="#Brochure-printing" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Printing-item1" visible=false>
+                <a-image src="#Digital-printing" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Printing-item2" visible=false>
+                <a-image src="#silkScreen-printing" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">  
+                </a-image>
+              </a-entity>
+              <a-entity id="Printing-item3" visible=false>
+                <a-image src="#uv-printing" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Printing-item4" visible=false>
+                <a-image src="#Forms-printing" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Printing-item5" visible=false>
+                <a-image src="#Binding-printing" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+
+              // Packaging portfolio assets
+              <a-entity id="Packaging-item0" visible=false>
+                <a-image src="#Custom-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Packaging-item1" visible=false>
+                <a-image src="#Solutions-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Packaging-item2" visible=false>
+                <a-image src="#versatile-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Packaging-item3" visible=false>
+                <a-image src="#flexible-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Packaging-item4" visible=false>
+                <a-image src="#specialty-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Packaging-item5" visible=false>
+                <a-image src="#sustainable-packaging" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+
+              // Garden portfolio assets
+              <a-entity id="Garden-item0" visible=false>
+                <a-image src="#Vertical1-garden" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Garden-item1" visible=false>
+                <a-image src="#Vertical2-garden" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              <a-entity id="Garden-item2" visible=false>
+                <a-image src="#Vertical3-garden" alpha-test="0.5" position="0 0 0.01" height="0.552" width="1">
+                </a-image>
+              </a-entity>
+              
+
+            <a-image visible=false id="portfolio-left-button" class="clickable" src="#icon-left" position="-0.7 0.1 0.02" height="0.15" width="0.15"></a-image>
+            <a-image visible=false id="portfolio-right-button" class="clickable" src="#icon-right" position="-0.7 -0.1 0.02" height="0.15" width="0.15"></a-image>
+
           </a-entity>
 
- <a-image visible="false" id="profile-button" class="clickable" src="#icon-profile" position="-0.6 0.3 0" height="0.15" width="0.15"
-  animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-></a-image>
+          <a-image visible="false" id="web-button" class="clickable" src="#icon-web" alpha-test="0.5" position="-0.6 0.2 0.02"
+            height="0.15" width="0.15"
+            animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-image>
+          
+          <a-image visible="false" id="phone-button" class="clickable" src="#icon-phone" position="-0.6 0 0.02" height="0.15"
+            width="0.15"
+            animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-image>
+          
+          <a-image visible="false" id="location-button" class="clickable" src="#icon-location" position="-0.6 -0.2 0.02"
+            height="0.15" width="0.15"
+            animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-image>
 
-<a-image visible="false" id="web-button" class="clickable" src="#icon-web" alpha-test="0.5" position="-0.6 0.1 0" height="0.15" width="0.15"
-  animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-></a-image>
+          <a-text visible="false" id="text" class="clickable" value="" color="black" align="center" width="2" position="0 -0.5 0.02" geometry="primitive:plane; height: 0.1; width: 1.8;" material="opacity: 0.5"></a-text>
 
-<a-image visible="false" id="email-button" class="clickable" src="#icon-email" position="-0.6 -0.1 0" height="0.15" width="0.15"
-  animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-></a-image>
-
-<a-image visible="false" id="location-button" class="clickable" src="#icon-location" position="-0.6 -0.3 0" height="0.15" width="0.15"
-  animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-></a-image>
-
-          <a-gltf-model id="avatar4" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_Occluder" occluder material="side: double" render-order="0"></a-gltf-model>
-          <a-gltf-model id="avatar3" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_Doors" occluder material="side: double" render-order="0" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
-          <a-gltf-model id="avatar1" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_Logo" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
-          <a-gltf-model id="avatar2" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_Box"></a-gltf-model>
-
-          <a-text id="text" class="clickable" value="" color="black" align="center" width="2" position="0 -1 0" geometry="primitive:plane; height: 0.1; width: 2;" material="opacity: 0.5"></a-text>
+          <a-gltf-model id="ERAM_Occluder" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_OccluderAsset" occluder material="side: double" render-order="0"></a-gltf-model>
+          <a-gltf-model id="ERAM_Doors" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_DoorsAsset" occluder material="side: double" render-order="0" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
+          <a-gltf-model id="ERAM_Logo" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_LogoAsset" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
+          <a-gltf-model id="ERAM_Box" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_BoxAsset"></a-gltf-model>
         </a-entity>
       </a-scene>
     </div>
