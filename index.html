@@ -31,10 +31,32 @@
           }
         });
 
+          AFRAME.registerComponent('model-opacity', {
+            schema: { default: 1.0 },
+            init: function () {
+              this.el.addEventListener('model-loaded', () => {
+                this.update();
+              });
+            },
+            update: function () {
+              const mesh = this.el.getObject3D('mesh');
+              const data = this.data;
+              if (!mesh) return;
+              mesh.traverse((node) => {
+                if (node.isMesh) {
+                  node.material.opacity = data;
+                  node.material.transparent = data < 1.0;
+                  node.material.needsUpdate = true;
+                }
+              });
+            }
+          });
+
       const showInfo = () => {
         const webButton = document.querySelector("#web-button");
         const phoneButton = document.querySelector("#phone-button");
         const locationButton = document.querySelector("#location-button");
+        const emailButton = document.querySelector("#Email-button");
         const text = document.querySelector("#text");
 
         webButton.setAttribute("visible", true);
@@ -45,6 +67,9 @@
           locationButton.setAttribute("visible", true);
           text.setAttribute("visible", true);
         }, 600);
+        setTimeout(() => {
+          emailButton.setAttribute("visible", true);
+        }, 900);
 
         let currentTab = '';
         webButton.addEventListener('click', function (evt) {
@@ -59,6 +84,10 @@
           console.log("loc");
           text.setAttribute("value", "2ب، 4416, Dammam 34341, Saudi Arabia");
           currentTab = 'location';
+        });
+        emailButton.addEventListener('click', function (evt) {
+          text.setAttribute("value", "info@uarkprinting.com");
+          currentTab = 'email';
         });
 
         text.addEventListener('click', function (evt) {
@@ -429,6 +458,7 @@ const showPortfolio = (done) => {
 
           <a-asset-item id="avatarModel1" src="./assets/card-example/Plan.glb"></a-asset-item>
           <a-asset-item id="ERAM_LogoAsset" src="./assets/card-example/Models/S1/ERAM_animated.glb"></a-asset-item>
+          <a-asset-item id="ERAM_BackAsset" src="./assets/card-example/Models/S1/ERAM_Back.glb"></a-asset-item>
           <a-asset-item id="ERAM_BoxAsset" src="./assets/card-example/Models/S1/ERAM_Box.glb"></a-asset-item>
           <a-asset-item id="ERAM_DoorsAsset" src="./assets/card-example/Models/S1/ERAM_Doors.glb"></a-asset-item>
           <a-asset-item id="ERAM_OccluderAsset" src="./assets/card-example/Models/S1/ERAM_occulder.glb"></a-asset-item>
@@ -473,7 +503,7 @@ const showPortfolio = (done) => {
             <a-light id="Services_Light6" type="point" color="#136207" intensity="50" distance="500" decay="2" position="0.3 -0.1 -0.05"></a-light>
           </a-entity>
 
-          <a-entity visible=false id="portfolio-panel" position="1.2 0 0.01">
+          <a-entity visible=false id="portfolio-panel" position="0 -0.7 0.01">
             <!-- <a-text value="Portfolio" color="black" align="center" width="2" position="0 0.4 0"></a-text>
             <a-entity id="portfolio-item0">
               <a-video id="paintandquest-video-link" webkit-playsinline playsinline width="1" height="0.552" position="0 0 0"></a-video>
@@ -638,21 +668,24 @@ const showPortfolio = (done) => {
                 </a-image>
               </a-entity>
 
-
-            <a-image visible=false id="portfolio-left-button" class="clickable" src="#icon-left" position="-0.65 0.1 0.02" height="0.15" width="0.15"></a-image>
-            <a-image visible=false id="portfolio-right-button" class="clickable" src="#icon-right" position="-0.65 -0.1 0.02" height="0.15" width="0.15"></a-image>
+            <a-image visible=false id="portfolio-left-button" class="clickable" src="#icon-left" position="-0.7 0 0.02" height="0.15" width="0.15"></a-image>
+            <a-image visible=false id="portfolio-right-button" class="clickable" src="#icon-right" position="0.7 0 0.02" height="0.15" width="0.15"></a-image>
 
           </a-entity>
 
-          <a-image visible="false" id="web-button" class="clickable" src="#icon-web" alpha-test="0.5" position="-0.6 0.2 0.02"
+          <a-image visible="false" id="web-button" class="clickable" src="#icon-web" alpha-test="0.5" position="-0.6 0.1 0.02"
             height="0.15" width="0.15"
             animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-image>
           
-          <a-image visible="false" id="phone-button" class="clickable" src="#icon-phone" position="-0.6 0 0.02" height="0.15"
+          <a-image visible="false" id="phone-button" class="clickable" src="#icon-phone" position="0.6 0.1 0.02" height="0.15"
             width="0.15"
             animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-image>
           
-          <a-image visible="false" id="location-button" class="clickable" src="#icon-location" position="-0.6 -0.2 0.02"
+          <a-image visible="false" id="location-button" class="clickable" src="#icon-location" position="0.6 -0.1 0.02"
+            height="0.15" width="0.15"
+            animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-image>
+
+          <a-image visible="false" id="Email-button" class="clickable" src="#icon-email" position="-0.6 -0.1 0.02"
             height="0.15" width="0.15"
             animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-image>
 
@@ -661,6 +694,7 @@ const showPortfolio = (done) => {
           <a-gltf-model id="ERAM_Occluder" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_OccluderAsset" occluder material="side: double" render-order="0"></a-gltf-model>
           <a-gltf-model id="ERAM_Doors" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_DoorsAsset" occluder material="side: double" render-order="0" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
           <a-gltf-model id="ERAM_Logo" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_LogoAsset" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;"></a-gltf-model>
+          <a-gltf-model id="ERAM_Back" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_BackAsset" animation-mixer="clip: *; loop: once; clampWhenFinished: true; timeScale: 0;" model-opacity="0.75"></a-gltf-model>
           <a-gltf-model id="ERAM_Box" rotation="90 0 0" position="0 0 0.01" scale="1 1 1" src="#ERAM_BoxAsset"></a-gltf-model>
         </a-entity>
       </a-scene>
